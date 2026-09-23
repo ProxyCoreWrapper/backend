@@ -1,20 +1,10 @@
 use crate::consts;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
-
-#[derive(Deserialize, Serialize)]
-pub struct Subprocess {
-    pub binary: String,
-}
-
-impl Default for Subprocess {
-    fn default() -> Self {
-        Self { binary: "sing-box".to_string() }
-    }
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct Server {
@@ -23,14 +13,38 @@ pub struct Server {
 
 impl Default for Server {
     fn default() -> Self {
-        Self { uds_path: PathBuf::from("/run/PCW/backend/socket") }
+        Self {
+            uds_path: PathBuf::from("/run/PCW/backend/socket"),
+        }
     }
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize)]
 pub struct Config {
-    pub subprocess: Subprocess,
-    pub server: Server
+    // Core tag to startup command
+    pub cores: BTreeMap<String, Vec<String>>,
+    pub server: Server,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            cores: BTreeMap::from([
+                (
+                    "sing-box".to_string(),
+                    vec!["sing-box", "run", "-c", "%c"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                ), // Config path
+                (
+                    "xray-core".to_string(),
+                    vec!["xray", "run"].iter().map(|s| s.to_string()).collect(),
+                ), // Stdin
+            ]),
+            server: Server::default(),
+        }
+    }
 }
 
 impl Config {

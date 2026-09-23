@@ -1,10 +1,9 @@
 mod configs;
-mod events;
-mod managment;
+mod management;
 mod proto;
 
 use crate::configs_manager::ConfigsManager;
-use crate::subprocess_control::SubprocessController;
+use crate::subprocesses_control::SubprocessesController;
 use anyhow::Context;
 use log::info;
 use std::fs::Permissions;
@@ -13,9 +12,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
 
-pub async fn start<'a>(
-    subprocess_controller: Arc<Mutex<SubprocessController<'static>>>,
-    configs_manager: Arc<Mutex<ConfigsManager<'static>>>,
+pub async fn start(
+    subprocess_controller: Arc<Mutex<SubprocessesController>>,
+    configs_manager: Arc<Mutex<ConfigsManager>>,
 ) -> anyhow::Result<()> {
     let config = crate::config::get_or_panic();
 
@@ -27,13 +26,11 @@ pub async fn start<'a>(
         .context("socket permissions setting error")?;
     let incoming = tokio_stream::wrappers::UnixListenerStream::new(uds);
 
-    let managment_serivce = proto::managment_server::ManagmentServer::new(
-        managment::Managment::new(subprocess_controller, configs_manager.clone()),
+    let management_serivce = proto::management_server::ManagementServer::new(
+        management::Management::new(subprocess_controller.clone(), configs_manager.clone()),
     );
     let configs_serivce =
-        proto::configs_server::ConfigsServer::new(configs::Configs::new(configs_manager));
-    let network_event_service =
-        proto::network_events_server::NetworkEventsServer::new(events::Events::default());
+        proto::configs_server::ConfigsServer::new(configs::Configs::new(subprocess_controller, configs_manager));
 
     info!("Running...");
 
@@ -50,9 +47,8 @@ pub async fn start<'a>(
     };
 
     Server::builder()
-        .add_service(managment_serivce)
+        .add_service(management_serivce)
         .add_service(configs_serivce)
-        .add_service(network_event_service)
         .serve_with_incoming_shutdown(incoming, shutdown_signal)
         .await?;
 
