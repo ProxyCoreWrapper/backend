@@ -81,7 +81,7 @@ impl proto::configs_server::Configs for Configs {
         self.configs_manager
             .lock()
             .await
-            .edit(&req.config_id, &req.config, &req.core_tag)?;
+            .edit(&req.config_id, req.config.as_ref(), req.core_tag.to_owned())?;
 
         Ok(Response::new(proto::EditConfigResponse::default()))
     }

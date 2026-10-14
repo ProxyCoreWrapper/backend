@@ -5,7 +5,7 @@ use serde_json;
 use std::fs::{File, OpenOptions};
 use std::io::ErrorKind;
 use std::io::prelude::*;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use tonic::{Result, Status};
 
 pub struct ConfigsManager {
@@ -114,42 +114,48 @@ impl ConfigsManager {
         Ok(config)
     }
 
-    pub fn edit(&mut self, config_id: &str, new_config: &str, core_tag: &str) -> Result<()> {
-        if Path::new(config_id).components().count() != 1
-            || Path::new(config_id)
-                .components()
-                .any(|component| !matches!(component, Component::Normal(_)))
+    pub fn edit(
+        &mut self,
+        config_id: &str,
+        new_config: Option<&String>,
+        core_tag: Option<String>,
+    ) -> Result<()> {
+        if !regex::Regex::new(r"^[\w-]+$").unwrap().is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
+
+        if !self.metadata.configs_meta.contains_key(config_id)
+            && new_config.is_none()
+            && core_tag.is_none()
         {
-            return Err(Status::invalid_argument("Invalid config id"));
+            return Err(Status::invalid_argument(
+                "To create a config both config and core tag must be provided",
+            ));
         }
 
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(self.configs_directory.join(config_id))?;
+        if let Some(new_config) = new_config {
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(self.configs_directory.join(config_id))?;
 
-        file.write(new_config.as_bytes()).map_err(|err| {
-            error!("Config {:?} editing error: {}", config_id, err);
-            Status::internal("Config editing error")
-        })?;
-
-        let had_config_id = self.metadata.configs_meta.contains_key(config_id);
-
-        let entry = self
-            .metadata
-            .configs_meta
-            .entry(config_id.to_string())
-            .or_insert(metadata::ConfigMetadata {
-                core_tag: core_tag.to_string(),
-            });
-
-        let core_tag_changed = entry.core_tag != core_tag;
-        if core_tag_changed {
-            entry.core_tag = core_tag.to_string();
+            file.write(new_config.as_bytes()).map_err(|err| {
+                error!("Config {:?} editing error: {}", config_id, err);
+                Status::internal("Config editing error")
+            })?;
         }
 
-        if !had_config_id || core_tag_changed {
+        if let Some(core_tag) = core_tag {
+            self.metadata.configs_meta.insert(
+                config_id.to_string(),
+                metadata::ConfigMetadata {
+                    core_tag: core_tag,
+                },
+            );
+
             self.save_metadata()?;
         }
 
