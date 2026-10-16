@@ -1,5 +1,8 @@
 [package]
 name = "pcw-backend"
+license = "MIT OR Apache-2.0"
+description = "gRPC daemon that manages proxy cores for ProxyCoreWrapper"
+repository = "https://github.com/ProxyCoreWrapper/backend"
 version = "0.1.0"
 edition = "2024"
 

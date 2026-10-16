@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use tonic::{Result, Status};
 
 pub struct ConfigsManager {
-    configs_directory: &'static Path,
-    metadata_path: &'static Path,
+    configs_directory: PathBuf,
+    metadata_path: PathBuf,
     metadata: metadata::MetadataDB,
 }
 
@@ -20,11 +20,11 @@ pub struct ConfigEntry {
 }
 
 impl ConfigsManager {
-    pub fn new<P1: AsRef<Path> + ?Sized, P2: AsRef<Path> + ?Sized>(
-        directory: &'static P1,
-        metadata_path: &'static P2,
+    pub fn new<P1: AsRef<Path>, P2: AsRef<Path>>(
+        directory: P1,
+        metadata_path: P2,
     ) -> std::io::Result<Self> {
-        std::fs::create_dir_all(directory)?;
+        std::fs::create_dir_all(directory.as_ref())?;
         metadata_path
             .as_ref()
             .parent()
@@ -32,8 +32,8 @@ impl ConfigsManager {
             .ok_or(ErrorKind::InvalidFilename)??;
 
         Ok(Self {
-            configs_directory: directory.as_ref(),
-            metadata_path: metadata_path.as_ref(),
+            configs_directory: directory.as_ref().to_path_buf(),
+            metadata_path: metadata_path.as_ref().to_path_buf(),
             metadata: serde_json::from_reader(File::open(metadata_path)?).unwrap_or_else(|_| {
                 error!("Metadata is corrupted. Creating an empty metadata...");
                 metadata::MetadataDB::default()
@@ -187,7 +187,7 @@ impl ConfigsManager {
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(self.metadata_path)
+                .open(&self.metadata_path)
                 .map_err(|err| {
                     error!("Metadata file opening error: {}", err);
                     Status::internal("Metadata file opening error")

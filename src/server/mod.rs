@@ -6,8 +6,6 @@ use crate::configs_manager::ConfigsManager;
 use crate::subprocesses_control::SubprocessesController;
 use anyhow::Context;
 use log::info;
-use std::fs::Permissions;
-use std::os::unix::fs::PermissionsExt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
@@ -18,12 +16,8 @@ pub async fn start(
 ) -> anyhow::Result<()> {
     let config = crate::config::get_or_panic();
 
-    std::fs::create_dir_all(config.server.uds_path.with_file_name(""))
-        .context("socket's directory creating error")?;
     let uds =
         tokio::net::UnixListener::bind(&config.server.uds_path).context("socket binding error")?;
-    std::fs::set_permissions(&config.server.uds_path, Permissions::from_mode(0o660))
-        .context("socket permissions setting error")?;
     let incoming = tokio_stream::wrappers::UnixListenerStream::new(uds);
 
     let management_serivce = proto::management_server::ManagementServer::new(

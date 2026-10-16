@@ -1,4 +1,4 @@
-use crate::consts;
+use crate::vars;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -14,7 +14,7 @@ pub struct Server {
 impl Default for Server {
     fn default() -> Self {
         Self {
-            uds_path: PathBuf::from("/run/PCW/backend/socket"),
+            uds_path: vars::runtime_socket_path(),
         }
     }
 }
@@ -49,7 +49,7 @@ impl Default for Config {
 
 impl Config {
     pub fn read() -> Result<Self> {
-        let config_path = PathBuf::from(consts::CONFIG_PATH);
+        let config_path = vars::configuration_file_path();
 
         let mut config_file = match File::open(config_path) {
             Ok(file) => file,

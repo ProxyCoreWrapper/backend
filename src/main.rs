@@ -1,31 +1,13 @@
 mod config;
 mod configs_manager;
-mod consts;
+mod vars;
 mod server;
 mod subprocesses_control;
 
 use log::{error, info};
-use std::os::unix::fs::PermissionsExt;
 use std::process::ExitCode;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-const CONFIGS_DIR: &str = const_format::concatcp!(consts::BACKEND_DIR, "/", consts::CONFIGS_DIR);
-const META_DATA_PATH: &str =
-    const_format::concatcp!(consts::BACKEND_DIR, "/", consts::META_DATA_PATH);
-
-fn initialize_backend_directory(dir: &str) -> ExitCode {
-    if let Err(e) = std::fs::create_dir_all(dir) {
-        error!("Failed to initialize backend directory: {}", e);
-        return ExitCode::FAILURE;
-    }
-    if let Err(e) = std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700)) {
-        error!("Failed to set permissions for backend directory: {}", e);
-        return ExitCode::FAILURE;
-    }
-
-    ExitCode::SUCCESS
-}
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -43,15 +25,14 @@ async fn main() -> ExitCode {
         }
     };
 
-    if initialize_backend_directory(consts::BACKEND_DIR) != ExitCode::SUCCESS {
-        return ExitCode::FAILURE;
-    }
+    let configs_directory = vars::configs_directory();
+    let metadata_path = vars::metadata_path();
 
     let controller = Arc::new(Mutex::new(subprocesses_control::SubprocessesController::new(
         config.cores.clone(),
     )));
     let configs_manager = Arc::new(Mutex::new(
-        match configs_manager::ConfigsManager::new(CONFIGS_DIR, META_DATA_PATH) {
+        match configs_manager::ConfigsManager::new(configs_directory, metadata_path) {
             Ok(manager) => manager,
             Err(e) => {
                 error!("Configs manager initialization error: {}", e);

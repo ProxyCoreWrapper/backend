@@ -1,4 +1,4 @@
-use crate::consts;
+use crate::vars;
 use log::{error, warn};
 use nix::sys::signal::{SIGTERM, kill};
 use nix::unistd::Pid;
@@ -75,8 +75,8 @@ pub struct Subprocess {
 
 impl Subprocess {
     pub fn new(mut process: Child) -> Self {
-        let (stdout, _) = broadcast::channel(consts::LOGS_BUFFER_SIZE);
-        let (stderr, _) = broadcast::channel(consts::LOGS_BUFFER_SIZE);
+        let (stdout, _) = broadcast::channel(vars::LOGS_BUFFER_SIZE);
+        let (stderr, _) = broadcast::channel(vars::LOGS_BUFFER_SIZE);
 
         if let Some(out) = process.stdout.take() {
             spawn_reader(out, stdout.clone());

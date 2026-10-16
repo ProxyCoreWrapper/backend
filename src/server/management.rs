@@ -1,6 +1,6 @@
 use super::proto;
 use crate::configs_manager::ConfigsManager;
-use crate::consts;
+use crate::vars;
 use crate::subprocesses_control::SubprocessesController;
 use log::{error, info, warn};
 use std::{ffi::OsStr, sync::Arc};
@@ -124,7 +124,7 @@ impl proto::management_server::Management for Management {
     ) -> Result<Response<Self::ReceiveLogStream>> {
         use proto::log_record::FileDescriptor as FD;
 
-        let (tx, rx) = mpsc::channel(consts::LOGS_BUFFER_SIZE);
+        let (tx, rx) = mpsc::channel(vars::LOGS_BUFFER_SIZE);
 
         let config_id = OsStr::new(&request.get_ref().config_id);
 
