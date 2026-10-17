@@ -1,6 +1,7 @@
 mod metadata;
 
 use crate::regexes::CONFIG_ID_REGEX;
+use anyhow::Context;
 use log::{error, warn};
 use serde_json;
 use std::fs::{File, OpenOptions};
@@ -24,18 +25,37 @@ impl ConfigsManager {
     pub fn new<P1: AsRef<Path>, P2: AsRef<Path>>(
         directory: P1,
         metadata_path: P2,
-    ) -> std::io::Result<Self> {
-        std::fs::create_dir_all(directory.as_ref())?;
+    ) -> anyhow::Result<Self> {
+        std::fs::create_dir_all(directory.as_ref()).with_context(|| {
+            format!(
+                "failed to create configs directory {}",
+                directory.as_ref().display()
+            )
+        })?;
         metadata_path
             .as_ref()
             .parent()
-            .map(|parent| std::fs::create_dir_all(parent))
-            .ok_or(ErrorKind::InvalidFilename)??;
+            .map(|parent| {
+                std::fs::create_dir_all(parent).with_context(|| {
+                    format!(
+                        "failed to create metadata directory {}",
+                        parent.display()
+                    )
+                })
+            })
+            .ok_or(std::io::Error::from(ErrorKind::InvalidFilename))
+            .context("failed to determine metadata directory")??;
 
         Ok(Self {
             configs_directory: directory.as_ref().to_path_buf(),
             metadata_path: metadata_path.as_ref().to_path_buf(),
-            metadata: serde_json::from_reader(File::open(metadata_path)?).unwrap_or_else(|_| {
+            metadata: serde_json::from_str(
+                &std::fs::read_to_string(metadata_path.as_ref()).unwrap_or_else(|_| {
+                    error!("Metadata file is missing. Creating an empty metadata...");
+                    "{}".to_string()
+                })
+            )
+            .unwrap_or_else(|_| {
                 error!("Metadata is corrupted. Creating an empty metadata...");
                 metadata::MetadataDB::default()
             }),
