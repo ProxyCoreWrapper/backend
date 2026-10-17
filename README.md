@@ -15,7 +15,7 @@ The protobuf API definitions are in [`proto-files`](https://github.com/ProxyCore
 
 ## Requirements
 
-- Rust and Cargo (edition 2024) for building from source.
+- Protobuf (protoc command), Rust and Cargo (edition 2024) for building from source.
 - A proxy core such as `sing-box` or `xray`, if you want to start
   configurations.
 
@@ -24,7 +24,7 @@ The protobuf API definitions are in [`proto-files`](https://github.com/ProxyCore
 ### From source
 
 ```sh
-git clone https://github.com/ProxyCoreWrapper/backend.git
+git clone https://github.com/ProxyCoreWrapper/backend.git --recurse-submodules
 cd backend
 cargo build --release
 sudo install -Dm755 target/release/pcw-backend /usr/local/bin/pcw-backend
@@ -36,9 +36,9 @@ The binary can be started directly:
 sudo /usr/local/bin/pcw-backend
 ```
 
-For an Arch Linux installation, use the `pcw-backend` package from the
-project's AUR packaging files. The package installs and enables no services
-automatically; start it when it is ready with:
+### From AUR
+
+Install the `pcw-backend` package from the [AUR](https://aur.archlinux.org/packages/pcw-backend) and start the service when it is ready with:
 
 ```sh
 sudo systemctl enable --now pcw-backend.service
