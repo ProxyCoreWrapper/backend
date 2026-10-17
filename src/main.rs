@@ -1,6 +1,7 @@
 mod config;
 mod configs_manager;
 mod vars;
+mod regexes;
 mod server;
 mod subprocesses_control;
 

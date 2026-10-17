@@ -1,5 +1,6 @@
 mod metadata;
 
+use crate::regexes::CONFIG_ID_REGEX;
 use log::{error, warn};
 use serde_json;
 use std::fs::{File, OpenOptions};
@@ -88,6 +89,12 @@ impl ConfigsManager {
     }
 
     pub fn read(&self, config_id: &str) -> Result<String> {
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
+
         let mut file =
             File::open(self.configs_directory.join(config_id)).map_err(|err| match err.kind() {
                 ErrorKind::NotFound => return Status::not_found("Config not found"),
@@ -120,7 +127,7 @@ impl ConfigsManager {
         new_config: Option<&String>,
         core_tag: Option<String>,
     ) -> Result<()> {
-        if !regex::Regex::new(r"^[\w-]+$").unwrap().is_match(config_id) {
+        if !CONFIG_ID_REGEX.is_match(config_id) {
             return Err(Status::invalid_argument(
                 "Config id doesn't match \"[\\w-]+\"",
             ));
@@ -151,9 +158,7 @@ impl ConfigsManager {
         if let Some(core_tag) = core_tag {
             self.metadata.configs_meta.insert(
                 config_id.to_string(),
-                metadata::ConfigMetadata {
-                    core_tag: core_tag,
-                },
+                metadata::ConfigMetadata { core_tag: core_tag },
             );
 
             self.save_metadata()?;
@@ -163,6 +168,12 @@ impl ConfigsManager {
     }
 
     pub fn delete(&mut self, config_id: &str) -> Result<()> {
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
+
         self.metadata.configs_meta.remove(config_id);
         self.save_metadata()?;
 

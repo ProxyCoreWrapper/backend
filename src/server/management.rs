@@ -1,7 +1,8 @@
 use super::proto;
 use crate::configs_manager::ConfigsManager;
-use crate::vars;
+use crate::regexes::CONFIG_ID_REGEX;
 use crate::subprocesses_control::SubprocessesController;
+use crate::vars;
 use log::{error, info, warn};
 use std::{ffi::OsStr, sync::Arc};
 use tokio::sync::{Mutex, broadcast, mpsc};
@@ -79,6 +80,12 @@ impl proto::management_server::Management for Management {
     ) -> Result<Response<proto::StartResponse>> {
         let config_id = &request.get_ref().config_id;
 
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
+
         let mut subprocess_controller = self.subprocess_controller.lock().await;
         let configs_manager = self.configs_manager.lock().await;
 
@@ -92,6 +99,12 @@ impl proto::management_server::Management for Management {
         request: Request<proto::RestartRequest>,
     ) -> Result<Response<proto::RestartResponse>> {
         let config_id = &request.get_ref().config_id;
+
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
 
         let mut subprocess_controller = self.subprocess_controller.lock().await;
         let configs_manager = self.configs_manager.lock().await;
@@ -107,6 +120,12 @@ impl proto::management_server::Management for Management {
         request: Request<proto::StopRequest>,
     ) -> Result<Response<proto::StopResponse>> {
         let config_id = &request.get_ref().config_id;
+
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
 
         let mut subprocess_controller = self.subprocess_controller.lock().await;
         let configs_manager = self.configs_manager.lock().await;
@@ -124,9 +143,15 @@ impl proto::management_server::Management for Management {
     ) -> Result<Response<Self::ReceiveLogStream>> {
         use proto::log_record::FileDescriptor as FD;
 
-        let (tx, rx) = mpsc::channel(vars::LOGS_BUFFER_SIZE);
+        let config_id = &request.get_ref().config_id;
+        if !CONFIG_ID_REGEX.is_match(config_id) {
+            return Err(Status::invalid_argument(
+                "Config id doesn't match \"[\\w-]+\"",
+            ));
+        }
+        let config_id = OsStr::new(config_id);
 
-        let config_id = OsStr::new(&request.get_ref().config_id);
+        let (tx, rx) = mpsc::channel(vars::LOGS_BUFFER_SIZE);
 
         let subprocess_controller = self.subprocess_controller.lock().await;
 
