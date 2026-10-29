@@ -37,10 +37,7 @@ impl ConfigsManager {
             .parent()
             .map(|parent| {
                 std::fs::create_dir_all(parent).with_context(|| {
-                    format!(
-                        "failed to create metadata directory {}",
-                        parent.display()
-                    )
+                    format!("failed to create metadata directory {}", parent.display())
                 })
             })
             .ok_or(std::io::Error::from(ErrorKind::InvalidFilename))
@@ -50,13 +47,10 @@ impl ConfigsManager {
             configs_directory: directory.as_ref().to_path_buf(),
             metadata_path: metadata_path.as_ref().to_path_buf(),
             metadata: serde_json::from_str(
-                &std::fs::read_to_string(metadata_path.as_ref()).unwrap_or_else(|_| {
-                    error!("Metadata file is missing. Creating an empty metadata...");
-                    "{}".to_string()
-                })
+                &std::fs::read_to_string(metadata_path.as_ref()).unwrap_or_else(|_| "".to_string()),
             )
             .unwrap_or_else(|_| {
-                error!("Metadata is corrupted. Creating an empty metadata...");
+                error!("Metadata is corrupted or doesn't exist. Creating an empty metadata...");
                 metadata::MetadataDB::default()
             }),
         })
