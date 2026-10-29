@@ -56,12 +56,12 @@ Log out and back in after changing group membership.
 
 ## Configuration
 
-The backend looks for `/etc/PCW/backend-config.toml`. If the file does not
+The backend looks for `/etc/pcw/backend-config.toml`. If the file does not
 exist, built-in defaults are used:
 
 ```toml
 [server]
-uds_path = "/run/PCW/socket"
+uds_path = "/run/pcw/socket"
 
 [cores]
 sing-box = ["sing-box", "run", "-c", "%c"]
@@ -92,9 +92,9 @@ root privileges.
 Create the configuration directory and file before starting the binary:
 
 ```sh
-sudo install -d -m755 /etc/PCW
-sudo install -Dm640 -g pcw /dev/null /etc/PCW/backend-config.toml
-sudoedit /etc/PCW/backend-config.toml
+sudo install -d -m755 /etc/pcw
+sudo install -Dm640 -g pcw /dev/null /etc/pcw/backend-config.toml
+sudoedit /etc/pcw/backend-config.toml
 sudo /usr/local/bin/pcw-backend
 ```
 
